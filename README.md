@@ -1,53 +1,55 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-C61 | ESP32-H2 | ESP32-H21 | ESP32-H4 | ESP32-P4 | ESP32-S2 | ESP32-S3 | Linux |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | --------- | -------- | --------- | -------- | -------- | -------- | -------- | ----- |
+# ESP32 Multi-Sensor System with Custom Drivers
 
-# Hello World Example
+A FreeRTOS-based data acquisition system on ESP32 with custom-built device drivers (no library abstractions).
 
-Starts a FreeRTOS task to print "Hello World".
+## Features
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+- **Custom 1-Wire protocol driver** for DS18B20 temperature sensor with microsecond-precision bit-banging and CRC8 verification
+- **Custom HC-SR04 ultrasonic driver** with timeout handling
+- **Custom I2C LCD driver** for PCF8574T-based 16x2 display
+- **FreeRTOS multi-task architecture** with priority-based scheduling and inter-task queue communication
 
-## How to use example
+## Hardware
 
-Follow detailed instructions provided specifically for this example.
+- ESP32-WROOM-32 development board
+- DS18B20 temperature sensor (1-Wire)
+- HC-SR04 ultrasonic distance sensor
+- 16x2 LCD with PCF8574T I2C adapter
 
-Select the instructions depending on Espressif chip installed on your development board:
+## Pin Configuration
 
-- [ESP32 Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/stable/get-started/index.html)
-- [ESP32-S2 Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/get-started/index.html)
+| Component | GPIO |
+|-----------|------|
+| DS18B20 DAT | GPIO4 |
+| HC-SR04 TRIG | GPIO5 |
+| HC-SR04 ECHO | GPIO18 |
+| LCD SDA | GPIO21 |
+| LCD SCL | GPIO22 |
 
+## Architecture
 
-## Example folder contents
+\`\`\`
+sensor_task (priority 3) ──┐
+                            ├──→ FreeRTOS queue ──→ display_task (priority 1)
+                            │                       │
+                            │                       ├── Serial output
+                            │                       └── LCD output
+\`\`\`
 
-The project **hello_world** contains one source file in C language [hello_world_main.c](main/hello_world_main.c). The file is located in folder [main](main).
+## Key Technical Decisions
 
-ESP-IDF projects are built using CMake. The project build configuration is contained in `CMakeLists.txt` files that provide set of directives and instructions describing the project's source files and targets (executable, library, or both).
+- **Bit-banged 1-Wire** instead of library: full timing control, interrupt-disabled critical sections
+- **Hardware I2C peripheral**: no interrupt protection needed (self-clocking protocol)
+- **FreeRTOS queues**: decouple producer (sensors) from consumer (display)
 
-Below is short explanation of remaining files in the project folder.
+## Build
 
-```
-├── CMakeLists.txt
-├── pytest_hello_world.py      Python script used for automated testing
-├── main
-│   ├── CMakeLists.txt
-│   └── hello_world_main.c
-└── README.md                  This is the file you are currently reading
-```
+\`\`\`bash
+idf.py set-target esp32
+idf.py build flash monitor
+\`\`\`
 
-For more information on structure and contents of ESP-IDF projects, please refer to Section [Build System](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html) of the ESP-IDF Programming Guide.
+## Built With
 
-## Troubleshooting
-
-* Program upload failure
-
-    * Hardware connection is not correct: run `idf.py -p PORT monitor`, and reboot your board to see if there are any output logs.
-    * The baud rate for downloading is too high: lower your baud rate in the `menuconfig` menu, and try again.
-
-## Technical support and feedback
-
-Please use the following feedback channels:
-
-* For technical queries, go to the [esp32.com](https://esp32.com/) forum
-* For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-idf/issues)
-
-We will get back to you as soon as possible.
+- ESP-IDF v6.0.1
+- FreeRTOS (built into ESP-IDF)
