@@ -5,6 +5,7 @@
 #include "onewire.h"
 #include "hcsr04.h"
 #include "lcd_i2c.h"
+#include "uart_bridge.h"
 
 /* Sensor data structure passed via queue */
 typedef struct {
@@ -57,6 +58,7 @@ static float ds18b20_read_temperature(void)
 
 void sensor_task(void *pvParameter)
 {
+    static uint32_t seq = 0;
     /* Configure GPIO */
     gpio_config_t io_conf = {
         .pin_bit_mask = (1ULL << ONEWIRE_GPIO),
@@ -81,6 +83,13 @@ void sensor_task(void *pvParameter)
         } */ 
        /* Send to queue - don't block if full */
         xQueueSend(sensor_queue, &data, 0);
+
+        uart_frame_t uart_data = {
+            .temp_c     = data.temperature,
+            .dist_cm    = data.distance,
+            .seq        = seq++,    // bridge task doesn't use seq from here 
+        };
+        xQueueSend(uart_sensor_queue, &uart_data, 0);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
@@ -119,6 +128,7 @@ void app_main(void)
     /* Create queue for 5 sensor readings */
     sensor_queue = xQueueCreate(5, sizeof(sensor_data_t));
     lcd_init();
+    uart_bridge_init();
     lcd_clear();
     lcd_printf(0,0, "Sensor System");
     lcd_printf(1,0, "Starting...");

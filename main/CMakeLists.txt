@@ -1,3 +1,3 @@
-idf_component_register(SRCS "hello_world_main.c" "onewire.c" "hcsr04.c" "lcd_i2c.c"
+idf_component_register(SRCS "hello_world_main.c" "onewire.c" "hcsr04.c" "lcd_i2c.c" "uart_bridge.c"
                         INCLUDE_DIRS "."
-                        REQUIRES esp_driver_i2c esp_driver_gpio)
+                        REQUIRES esp_driver_i2c esp_driver_gpio esp_driver_uart)
